@@ -16,7 +16,7 @@
 
 1. Клонируйте репозиторий:
    ```bash
-   git clone [git@github.com:Pashec/dstu-multimail-service.git](git@github.com:Pashec/dstu-multimail-service.git)
+   git clone git@github.com:Pashec/dstu-multimail-service.git
    ```
 2. Создайте и активируйте виртуальное окружение:
     ```bash
