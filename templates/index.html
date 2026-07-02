@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель рассылки</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 650px;
+            background: #ffffff;
+            margin: 20px auto;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #34495e;
+        }
+        input[type="text"], input[type="email"], input[type="password"], input[type="number"], textarea, input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        .hint {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 4px;
+        }
+        .smtp-section {
+            border: 1px solid #dcdde1;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+        }
+        .smtp-section h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 16px;
+            border-bottom: 1px solid #dcdde1;
+            padding-bottom: 8px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .status-msg {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            background-color: #e8f4fd;
+            border-left: 5px solid #3498db;
+            font-size: 14px;
+        }
+        
+        .status-panel {
+            border: 1px solid #b2eca2;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 6px;
+            background-color: #fafffa;
+        }
+        .status-panel h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #27ae60;
+            font-size: 16px;
+            border-bottom: 1px solid #b2eca2;
+            padding-bottom: 8px;
+        }
+        .progress-container {
+            background-color: #eaeded;
+            border-radius: 4px;
+            height: 22px;
+            width: 100%;
+            margin: 15px 0;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            background-color: #2ecc71;
+            height: 100%;
+            width: 0%;
+            transition: width 0.4s ease;
+            text-align: center;
+            color: white;
+            font-size: 13px;
+            line-height: 22px;
+            font-weight: bold;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .stat-card {
+            background: #ffffff;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #dcdde1;
+        }
+        .stat-card .num {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .stat-card .label {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        .btn-stop {
+            background-color: #e67e22;
+            margin-bottom: 15px;
+        }
+        .btn-stop:hover {
+            background-color: #d35400;
+        }
+        .error-container {
+            margin-top: 15px;
+        }
+        .error-box {
+            background: #fdf2f2;
+            border: 1px solid #fde8e8;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 120px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            color: #c81e1e;
+            text-align: left;
+        }
+        
+        .btn-shutdown {
+            background-color: #e74c3c;
+            margin-top: 15px;
+        }
+        .btn-shutdown:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Запуск Email-рассылки</h2>
+
+    {% if message %}
+    <div class="status-msg">
+        {{ message }}
+    </div>
+    {% endif %}
+
+    <div id="statusPanel" class="status-panel" style="display: none;">
+        <h3>Текущий прогресс отправки</h3>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div id="statTotal" class="num">0</div>
+                <div class="label">Всего</div>
+            </div>
+            <div class="stat-card">
+                <div id="statSent" class="num" style="color: #2ecc71;">0</div>
+                <div class="label">Ушло</div>
+            </div>
+            <div class="stat-card">
+                <div id="statSkipped" class="num" style="color: #f1c40f;">0</div>
+                <div class="label">Пропущено</div>
+            </div>
+            <div class="stat-card">
+                <div id="statErrors" class="num" style="color: #e74c3c;">0</div>
+                <div class="label">Ошибки</div>
+            </div>
+        </div>
+
+        <div class="progress-container">
+            <div id="progressBar" class="progress-bar">0%</div>
+        </div>
+
+        <button type="button" id="btnStop" class="btn-stop" onclick="stopBroadcast()">Остановить рассылку</button>
+        
+        <div id="errorContainer" class="error-container" style="display: none;">
+            <label>Лог возникших ошибок:</label>
+            <div id="errorBox" class="error-box"></div>
+        </div>
+    </div>
+
+    <form id="broadcastForm" action="/start-broadcast" method="post" enctype="multipart/form-data">
+        
+        <div class="smtp-section">
+            <h3>Авторизация на почтовом сервере</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="smtp_server">SMTP Сервер:</label>
+                    <input type="text" id="smtp_server" name="smtp_server" value="mail.donstu.ru" required>
+                </div>
+                <div class="form-group" style="flex: 0 0 150px;">
+                    <label for="smtp_port">Порт:</label>
+                    <input type="number" id="smtp_port" name="smtp_port" value="25" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="email_address">Email (Логин):</label>
+                    <input type="email" id="email_address" name="email_address" placeholder="username@donstu.ru" autocomplete="off" required>
+                </div>
+                <div class="form-group">
+                    <label for="email_password">Пароль:</label>
+                    <input type="password" id="email_password" name="email_password" autocomplete="new-password" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="delay_min">Мин. задержка (сек):</label>
+                    <input type="number" step="0.1" id="delay_min" name="delay_min" value="1.0" required>
+                </div>
+                <div class="form-group">
+                    <label for="delay_max">Макс. задержка (сек):</label>
+                    <input type="number" step="0.1" id="delay_max" name="delay_max" value="3.0" required>
+                </div>
+            </div>
+            <div class="hint">Параметры задержки используются для обхода спам-фильтров.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="subject">Тема письма:</label>
+            <input type="text" id="subject" name="subject" required placeholder="Введите тему рассылки...">
+        </div>
+
+        <div class="form-group">
+            <label for="excel_file">База адресатов (Excel):</label>
+            <input type="file" id="excel_file" name="excel_file" accept=".xlsx, .xls" required>
+            <div class="hint">Первая строка — заголовки (обязательно должна быть колонка "email").</div>
+        </div>
+
+        <div class="form-group">
+            <label for="html_template">HTML-макет письма (Необязательно):</label>
+            <input type="file" id="html_template" name="html_template" accept=".html">
+            <div class="hint">Если загружен .html файл, приоритет отдается ему, а поле ниже игнорируется.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="letter_text">Текст письма (Если нет макета):</label>
+            <textarea id="letter_text" name="letter_text" placeholder="Привет, {имя}! Текст вашего письма..."></textarea>
+            <div class="hint">Поддерживает {плейсхолдеры} из Excel и ссылки [Текст](https://...).</div>
+        </div>
+
+        <div class="form-group">
+            <label for="inline_image">Баннер/Картинка (Будет сверху письма):</label>
+            <input type="file" id="inline_image" name="inline_image" accept="image/*">
+        </div>
+
+        <div class="form-group">
+            <label for="attachments">Документы во вложение (PDF, ZIP, Документы):</label>
+            <input type="file" id="attachments" name="attachments" multiple>
+            <div class="hint">Можно выбрать несколько файлов сразу. Суммарно до 20 МБ.</div>
+        </div>
+
+        <button type="submit" id="btnSubmit">Запустить рассылку</button>
+    </form>
+
+    <button type="button" class="btn-shutdown" onclick="shutdownApp()">Выйти и закрыть программу</button>
+</div>
+
+<script>
+let statusWaterPulse = null;
+
+// Функция запуска циклического опроса состояния сервера
+function startStatusPolling() {
+    if (statusWaterPulse) return;
+
+    const panel = document.getElementById('statusPanel');
+    const submitBtn = document.getElementById('btnSubmit');
+    
+    panel.style.display = 'block';
+    if (submitBtn) submitBtn.disabled = true;
+
+    statusWaterPulse = setInterval(async () => {
+        try {
+            const response = await fetch('/api/status');
+            const data = await response.json();
+
+            document.getElementById('statTotal').innerText = data.total;
+            document.getElementById('statSent').innerText = data.sent;
+            document.getElementById('statSkipped').innerText = data.skipped;
+            document.getElementById('statErrors').innerText = data.errors.length;
+
+            const processed = data.sent + data.skipped + data.errors.length;
+            const percentage = data.total > 0 ? Math.round((processed / data.total) * 100) : 0;
+            
+            const bar = document.getElementById('progressBar');
+            bar.style.width = percentage + '%';
+            bar.innerText = percentage + '%';
+
+            const errorContainer = document.getElementById('errorContainer');
+            const errorBox = document.getElementById('errorBox');
+            if (data.errors.length > 0) {
+                errorContainer.style.display = 'block';
+                errorBox.innerHTML = data.errors.map(err => `<div>❌ ${err}</div>`).join('');
+            } else {
+                errorContainer.style.display = 'none';
+            }
+
+            if (!data.is_running) {
+                clearInterval(statusWaterPulse);
+                statusWaterPulse = null;
+                if (submitBtn) submitBtn.disabled = false;
+                document.getElementById('btnStop').style.display = 'none';
+                alert('Процесс рассылки завершен!');
+            }
+        } catch (error) {
+            console.error("Ошибка при получении статуса:", error);
+        }
+    }, 1500);
+}
+
+// Отправка сигнала на принудительную остановку цикла рассылки
+async function stopBroadcast() {
+    if (confirm("Вы уверены, что хотите приостановить рассылку? Текущее отправляемое письмо будет завершено, остальные отменены.")) {
+        try {
+            const response = await fetch('/api/stop', { method: 'POST' });
+            const data = await response.json();
+            alert(data.message);
+        } catch (error) {
+            alert("Не удалось отправить запрос на остановку: " + error);
+        }
+    }
+}
+
+// Мягкое выключение веб-сервера
+function shutdownApp() {
+    if (confirm("Вы действительно хотите завершить работу программы? Все фоновые процессы будут остановлены, а сервер выключен.")) {
+        fetch('/shutdown', { method: 'POST' })
+        .then(() => {
+            alert("Программа успешно остановлена. Теперь это окно можно закрыть.");
+            window.close();
+        })
+        .catch(err => {
+            console.error("Ошибка выключения:", err);
+            alert("Не удалось отправить сигнал выключения. Возможно, сервер уже остановлен.");
+        });
+    }
+}
+
+// Автоматическая проверка состояния при загрузке страницы (на случай рефреша формы)
+window.addEventListener('DOMContentLoaded', () => {
+    fetch('/api/status')
+    .then(res => res.json())
+    .then(data => {
+        if (data.is_running) {
+            startStatusPolling();
+        }
+    })
+    .catch(err => console.log("Сервер инициализируется..."));
+});
+</script>
+
+</body>
+</html>
