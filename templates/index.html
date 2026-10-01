@@ -4,197 +4,341 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Панель рассылки</title>
-    <style>
+<style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f6f9;
-            color: #333;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 40px 15px;
+            min-height: 100vh;
+            color: #1e293b;
+            background-color: #090d16;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
         }
+
+        /* Анимированные светящиеся шары (Aurora Blobs) */
+        .blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.55;
+            z-index: 0;
+            pointer-events: none;
+            animation: floatBlob 16s infinite alternate ease-in-out;
+        }
+
+        .blob-1 {
+            width: 480px;
+            height: 480px;
+            background: linear-gradient(135deg, #4f46e5, #06b6d4);
+            top: -10%;
+            left: -10%;
+            animation-duration: 18s;
+        }
+
+        .blob-2 {
+            width: 420px;
+            height: 420px;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            bottom: -10%;
+            right: -10%;
+            animation-duration: 14s;
+            animation-delay: -3s;
+        }
+
+        .blob-3 {
+            width: 350px;
+            height: 350px;
+            background: linear-gradient(135deg, #3b82f6, #10b981);
+            top: 40%;
+            left: 55%;
+            animation-duration: 20s;
+            animation-delay: -6s;
+        }
+
+        @keyframes floatBlob {
+            0% {
+                transform: translate(0px, 0px) scale(1) rotate(0deg);
+            }
+            33% {
+                transform: translate(120px, 80px) scale(1.15) rotate(60deg);
+            }
+            66% {
+                transform: translate(-80px, 140px) scale(0.9) rotate(180deg);
+            }
+            100% {
+                transform: translate(60px, -60px) scale(1.05) rotate(360deg);
+            }
+        }
+
+        /* Матовое стекло карточки */
         .container {
-            max-width: 650px;
-            background: #ffffff;
-            margin: 20px auto;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1;
+            max-width: 680px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            margin: auto;
+            padding: 35px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
+
         h2 {
             text-align: center;
-            color: #2c3e50;
+            color: #0f172a;
+            margin-top: 0;
             margin-bottom: 25px;
+            font-size: 24px;
         }
+
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
+
         .form-row {
             display: flex;
             gap: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
+
         .form-row .form-group {
             flex: 1;
             margin-bottom: 0;
         }
+
         label {
             display: block;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: #34495e;
+            margin-bottom: 7px;
+            color: #334155;
+            font-size: 13.5px;
         }
+
         input[type="text"], input[type="email"], input[type="password"], input[type="number"], textarea, input[type="file"] {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            padding: 10px 12px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
             box-sizing: border-box;
             font-size: 14px;
+            background: #ffffff;
+            transition: all 0.2s ease;
         }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
         textarea {
             resize: vertical;
-            min-height: 120px;
+            min-height: 110px;
         }
+
         .hint {
             font-size: 12px;
-            color: #7f8c8d;
-            margin-top: 4px;
+            color: #64748b;
+            margin-top: 5px;
         }
+
+        .hint code {
+            background: #e2e8f0;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #1e293b;
+            font-weight: 600;
+        }
+
         .smtp-section {
-            border: 1px solid #dcdde1;
+            border: 1px solid #e2e8f0;
             padding: 20px;
-            margin-bottom: 25px;
-            border-radius: 6px;
-            background-color: #f8f9fa;
+            margin-bottom: 22px;
+            border-radius: 12px;
+            background: #f8fafc;
         }
+
         .smtp-section h3 {
             margin-top: 0;
             margin-bottom: 15px;
-            color: #2c3e50;
-            font-size: 16px;
-            border-bottom: 1px solid #dcdde1;
+            color: #1e293b;
+            font-size: 15px;
+            border-bottom: 1px solid #e2e8f0;
             padding-bottom: 8px;
         }
+
         button {
             width: 100%;
-            padding: 12px;
-            background-color: #3498db;
+            padding: 13px;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
             color: white;
             border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            transition: all 0.2s ease;
         }
+
         button:hover {
-            background-color: #2980b9;
+            background: linear-gradient(135deg, #4338ca, #4f46e5);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+            transform: translateY(-1px);
         }
+
+        button:active {
+            transform: translateY(0);
+        }
+
         button:disabled {
-            background-color: #95a5a6;
+            background: #94a3b8;
+            box-shadow: none;
             cursor: not-allowed;
+            transform: none;
         }
+
         .status-msg {
-            padding: 15px;
+            padding: 14px;
             margin-bottom: 20px;
-            border-radius: 4px;
-            background-color: #e8f4fd;
-            border-left: 5px solid #3498db;
+            border-radius: 8px;
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
             font-size: 14px;
+            color: #1e40af;
         }
-        
+
         .status-panel {
-            border: 1px solid #b2eca2;
-            padding: 20px;
-            margin-bottom: 25px;
-            border-radius: 6px;
-            background-color: #fafffa;
+            border: 1px solid #bbf7d0;
+            padding: 18px;
+            margin-bottom: 22px;
+            border-radius: 10px;
+            background-color: #f0fdf4;
         }
+
         .status-panel h3 {
             margin-top: 0;
-            margin-bottom: 15px;
-            color: #27ae60;
-            font-size: 16px;
-            border-bottom: 1px solid #b2eca2;
+            margin-bottom: 12px;
+            color: #166534;
+            font-size: 15px;
+            border-bottom: 1px solid #bbf7d0;
             padding-bottom: 8px;
         }
+
         .progress-container {
-            background-color: #eaeded;
-            border-radius: 4px;
-            height: 22px;
+            background-color: #e2e8f0;
+            border-radius: 6px;
+            height: 20px;
             width: 100%;
-            margin: 15px 0;
+            margin: 14px 0;
             overflow: hidden;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
         }
+
         .progress-bar {
-            background-color: #2ecc71;
+            background: linear-gradient(90deg, #10b981, #059669);
             height: 100%;
             width: 0%;
             transition: width 0.4s ease;
             text-align: center;
             color: white;
-            font-size: 13px;
-            line-height: 22px;
+            font-size: 12px;
+            line-height: 20px;
             font-weight: bold;
         }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
+            gap: 8px;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
+
         .stat-card {
             background: #ffffff;
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #dcdde1;
+            padding: 8px 6px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
         }
+
         .stat-card .num {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
-            color: #2c3e50;
+            color: #0f172a;
         }
+
         .stat-card .label {
-            font-size: 11px;
-            color: #7f8c8d;
+            font-size: 10.5px;
+            color: #64748b;
             text-transform: uppercase;
             margin-top: 2px;
         }
+
         .btn-stop {
-            background-color: #e67e22;
-            margin-bottom: 15px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
         }
+
         .btn-stop:hover {
-            background-color: #d35400;
+            background: linear-gradient(135deg, #d97706, #b45309);
         }
+
         .error-container {
-            margin-top: 15px;
+            margin-top: 12px;
         }
+
         .error-box {
-            background: #fdf2f2;
-            border: 1px solid #fde8e8;
-            border-radius: 4px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
             padding: 10px;
             max-height: 120px;
             overflow-y: auto;
             font-family: monospace;
             font-size: 12px;
-            color: #c81e1e;
+            color: #991b1b;
             text-align: left;
         }
-        
+
         .btn-shutdown {
-            background-color: #e74c3c;
+            background: #f8fafc;
+            color: #64748b;
             margin-top: 15px;
+            box-shadow: none;
+            border: 1px solid #cbd5e1;
         }
+
         .btn-shutdown:hover {
-            background-color: #c0392b;
+            background: #fee2e2;
+            color: #dc2626;
+            border-color: #fca5a5;
         }
     </style>
 </head>
 <body>
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="container">
 
 <div class="container">
     <h2>Запуск Email-рассылки</h2>
@@ -298,7 +442,7 @@
 
         <div class="form-group">
             <label for="letter_text">Текст письма (Если нет макета):</label>
-            <textarea id="letter_text" name="letter_text" placeholder="Привет, {имя}! Текст вашего письма..."></textarea>
+            <textarea id="letter_text" name="letter_text" placeholder="Текст вашего письма..."></textarea>
             <div class="hint">Поддерживает {плейсхолдеры} из Excel и ссылки [Текст](https://...).</div>
         </div>
 
@@ -384,7 +528,6 @@ async function stopBroadcast() {
     }
 }
 
-// Мягкое выключение веб-сервера
 function shutdownApp() {
     if (confirm("Вы действительно хотите завершить работу программы? Все фоновые процессы будут остановлены, а сервер выключен.")) {
         fetch('/shutdown', { method: 'POST' })
@@ -399,7 +542,6 @@ function shutdownApp() {
     }
 }
 
-// Автоматическая проверка состояния при загрузке страницы (на случай рефреша формы)
 window.addEventListener('DOMContentLoaded', () => {
     fetch('/api/status')
     .then(res => res.json())
@@ -410,6 +552,7 @@ window.addEventListener('DOMContentLoaded', () => {
     })
     .catch(err => console.log("Сервер инициализируется..."));
 });
+
 </script>
 
 </body>
