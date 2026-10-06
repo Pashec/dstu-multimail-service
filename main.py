@@ -1,6 +1,8 @@
 import os
 import sys
 import uvicorn
+import io
+from email.header import Header
 import asyncio
 import pymorphy3
 from jinja2 import Template
@@ -48,6 +50,123 @@ broadcast_status = {
 # Инициализируем анализатор один раз при запуске сервера
 morph = pymorphy3.MorphAnalyzer()
 
+import re
+
+# Проверь, чтобы в начале main.py был объявлен морфологический анализатор:
+# morph = pymorphy3.MorphAnalyzer()
+
+def extract_person_key(text: str) -> str:
+    """
+    Превращает любую строку ('Аветисяну А.И.', 'Аветисян Арутюн') 
+    в единый ключ вида 'аветисян_а'
+    """
+    if not text:
+        return ""
+    # Очищаем от расширения файла и лишних знаков
+    clean = re.sub(r'\.(docx|doc|pdf)$', '', str(text), flags=re.IGNORECASE)
+    clean = clean.replace('.', ' ').replace('_', ' ').replace('-', ' ')
+    parts = clean.split()
+    
+    if not parts:
+        return ""
+    
+    # 1. Фамилию приводим к начальной форме через pymorphy3 (Аветисяну -> аветисян)
+    raw_surname = parts[0]
+    parsed = morph.parse(raw_surname)
+    norm_surname = parsed[0].normal_form.lower() if parsed else raw_surname.lower()
+    
+    # 2. Первую букву имени берем как инициал ('а' для 'А.И.' или 'а' для 'Арутюн')
+    first_initial = parts[1][0].lower() if len(parts) > 1 else ""
+    
+    return f"{norm_surname}_{first_initial}".rstrip("_")
+
+
+def find_personal_doc(person: dict, personal_files: dict[str, tuple[bytes, str]]) -> tuple[bytes, str] | None:
+    """Мгновенно находит файл по сформированному ключу"""
+    if not personal_files:
+        return None
+
+    # Достаем строку с именем из Excel (ФИО или связка Фамилия + Имя)
+    excel_fio = (
+        person.get("ФИО") or person.get("фио") or 
+        f"{person.get('Фамилия', '')} {person.get('Имя', '')}"
+    ).strip()
+
+    target_key = extract_person_key(excel_fio)
+    if not target_key:
+        return None
+
+    # Ищем в загруженных файлах тот, чей ключ совпал
+    for orig_name, file_tuple in personal_files.items():
+        if extract_person_key(orig_name) == target_key:
+            return file_tuple
+
+    return None
+
+async def watchdog_task():
+    """Фоновый сторож: убивает процесс, если вкладка закрыта и рассылка не идет"""
+    global last_heartbeat_time
+    while True:
+        await asyncio.sleep(3)
+        now = time.time()
+        
+        # Если вкладка молчит больше 8 секунд и рассылка не активна:
+        if (now - last_heartbeat_time > 8.0) and not broadcast_status.get("is_running", False):
+            print("\n[АВТОСТОП] Вкладка браузера закрыта. Завершение работы процесса...")
+            os._exit(0)
+
+
+
+import unicodedata
+
+def normalize_string(val: str) -> str:
+    """Удаляет лишние символы, расширения и пробелы для надежного сравнения"""
+    if not val:
+        return ""
+    # Убираем расширения .docx / .doc
+    val = re.sub(r'\.(docx|doc|pdf)$', '', val, flags=re.IGNORECASE)
+    # Заменяем подчёркивания и дефисы на пробелы
+    val = val.replace('_', ' ').replace('-', ' ')
+    # Очищаем от лишних пробелов и переводим в нижний регистр
+    val = " ".join(val.split()).lower()
+    return val
+
+def find_personal_attachment(person_dict: dict, personal_files: dict[str, tuple[bytes, str]]) -> tuple[bytes, str] | None:
+    """
+    Ищет персональный файл по ФИО, Фамилии+Имени или отдельным колонкам.
+    personal_files — словарь: {normalized_filename: (file_bytes, original_filename)}
+    """
+    # Собираем возможные варианты имени человека из колонок таблицы
+    fio = person_dict.get("ФИО") or person_dict.get("фио") or ""
+    first = person_dict.get("Имя") or person_dict.get("имя") or ""
+    patronymic = person_dict.get("Отчество") or person_dict.get("отчество") or ""
+    last = person_dict.get("Фамилия") or person_dict.get("фамилия") or ""
+
+    candidates = []
+    if fio:
+        candidates.append(normalize_string(fio))
+    if last and first and patronymic:
+        candidates.append(normalize_string(f"{last} {first} {patronymic}"))
+        candidates.append(normalize_string(f"{first} {patronymic} {last}"))
+    if last and first:
+        candidates.append(normalize_string(f"{last} {first}"))
+        candidates.append(normalize_string(f"{first} {last}"))
+    if first:
+        candidates.append(normalize_string(first))
+
+    # 1. Точное совпадение
+    for cand in candidates:
+        if cand in personal_files:
+            return personal_files[cand]
+
+    # 2. Нестрогое совпадение (если имя кандидата содержится в названии файла)
+    for cand in candidates:
+        if len(cand) >= 4:  # Чтобы не матчить слишком короткие слова
+            for norm_filename, file_tuple in personal_files.items():
+                if cand in norm_filename:
+                    return file_tuple
+
+    return None
 
 def detect_salutation(name: str, patronymic: str = "") -> dict:
     """Определяет пол и правильное обращение по Имени и Отчеству"""
@@ -176,6 +295,57 @@ def read_excel_from_bytes(file_bytes: bytes) -> list:
 # ФОНОВАЯ ЗАДАЧА ОТПРАВКИ
 # =====================================================================
 
+def normalize_name(text: str) -> str:
+    """Очищает строку от расширений, спецсимволов и лишних пробелов для точного сравнения"""
+    if not text:
+        return ""
+    # Убираем расширения .docx, .doc, .pdf
+    text = re.sub(r'\.(docx|doc|pdf)$', '', str(text), flags=re.IGNORECASE)
+    # Заменяем подчёркивания и дефисы на пробелы
+    text = text.replace('_', ' ').replace('-', ' ')
+    # Убираем повторяющиеся пробелы и переводим в нижний регистр
+    return " ".join(text.split()).lower()
+
+def find_personal_doc(person: dict, personal_files: dict[str, tuple[bytes, str]]) -> tuple[bytes, str] | None:
+    """Ищет личный файл человека среди загруженных документов"""
+    if not personal_files:
+        return None
+
+    fio = person.get("фио") or person.get("ФИО") or ""
+    first = person.get("имя") or person.get("Имя") or person.get("name") or person.get("Name") or ""
+    patronymic = person.get("отчество") or person.get("Отчество") or person.get("patronymic") or ""
+    last = person.get("фамилия") or person.get("Фамилия") or person.get("last_name") or ""
+
+    # Генерируем возможные варианты названия файла для этого человека
+    candidates = []
+    if fio:
+        candidates.append(normalize_name(fio))
+    if last and first and patronymic:
+        candidates.append(normalize_name(f"{last} {first} {patronymic}"))
+        candidates.append(normalize_name(f"{first} {patronymic} {last}"))
+    if last and first:
+        candidates.append(normalize_name(f"{last} {first}"))
+        candidates.append(normalize_name(f"{first} {last}"))
+    if first and patronymic:
+        candidates.append(normalize_name(f"{first} {patronymic}"))
+    if first:
+        candidates.append(normalize_name(first))
+
+    # 1. Точное совпадение
+    for cand in candidates:
+        if cand in personal_files:
+            return personal_files[cand]
+
+    # 2. Нестрогое вхождение (если имя есть внутри длинного названия файла)
+    for cand in candidates:
+        if len(cand) >= 4:
+            for norm_filename, file_tuple in personal_files.items():
+                if cand in norm_filename:
+                    return file_tuple
+
+    return None
+
+
 async def run_bg_broadcast(
     smtp_server: str,
     smtp_port: int,
@@ -189,7 +359,8 @@ async def run_bg_broadcast(
     inline_img_name: str | None,
     attachments_data: list[tuple[bytes, str]],
     delay_min: float,
-    delay_max: float
+    delay_max: float,
+    personal_files_map: dict[str, tuple[bytes, str]] = None  # <--- Принимает словарь персональных файлов
 ):
     global broadcast_status
 
@@ -201,8 +372,10 @@ async def run_bg_broadcast(
     broadcast_status["errors"] = []
 
     print(f"[РАССЫЛКА] Процесс запущен. Всего адресатов: {len(recipients)}")
+    if personal_files_map:
+        print(f"[ИНФО] Доступно персональных файлов для подстановки: {len(personal_files_map)}")
 
-    for index, person in enumerate(recipients, start=1):
+    for index, person in enumerate(recipients, start=1): 
         if broadcast_status["should_stop"]:
             print(f"[РАССЫЛКА] Процесс принудительно остановлен пользователем на шаге {index}!")
             break
@@ -272,6 +445,8 @@ async def run_bg_broadcast(
             msg_root["Subject"] = subject
             msg_root["From"] = email_address
             msg_root["To"] = email_to
+            msg_root["Date"] = email.utils.formatdate(localtime=True)
+            msg_root["Message-ID"] = email.utils.make_msgid(domain=smtp_server)
 
             msg_html_group = MIMEMultipart("related")
             msg_html_part = MIMEText(html_body, "html", "utf-8")
@@ -286,14 +461,32 @@ async def run_bg_broadcast(
 
             msg_root.attach(msg_html_group)
 
-            # Добавление файлов-вложений
+            # 1. Прикрепление ОБЩИХ файлов (для всех адресатов)
             for file_bytes, filename in attachments_data:
                 part = MIMEBase("application", "octet-stream")
                 part.set_payload(file_bytes)
                 encoders.encode_base64(part)
-                part.add_header("Content-Disposition", "attachment", filename=filename)
+                encoded_fn = Header(filename, 'utf-8').encode()
+                part.add_header("Content-Disposition", "attachment", filename=encoded_fn)
                 msg_root.attach(part)
 
+            # 2. ПОИСК И ПРИКРЕПЛЕНИЕ ПЕРСОНАЛЬНОГО WORD-ФАЙЛА 📄👤
+            if personal_files_map:
+                personal_doc = find_personal_doc(person, personal_files_map)
+                if personal_doc:
+                    p_bytes, p_name = personal_doc
+                    p_part = MIMEBase("application", "vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    p_part.set_payload(p_bytes)
+                    encoders.encode_base64(p_part)
+                    # Корректно экранируем русские символы в названии файла
+                    encoded_p_name = Header(p_name, 'utf-8').encode()
+                    p_part.add_header("Content-Disposition", "attachment", filename=encoded_p_name)
+                    msg_root.attach(p_part)
+                    print(f"   [ФАЙЛ] Прикреплен персональный документ: {p_name}")
+                else:
+                    print(f"   [ВНИМАНИЕ] Личный файл для {email_to} не найден среди загруженных!")
+
+            # Отправка письма
             await smtp_client.send_message(msg_root)
             broadcast_status["sent"] += 1
             print(f"[ОТПРАВЛЕНО] [{index}/{len(recipients)}] {gender_data['salutation']} -> {email_to}")
@@ -316,7 +509,6 @@ async def run_bg_broadcast(
     broadcast_status["is_running"] = False
     print(f"\n[ИТОГ] Рассылка полностью завершена. Отправлено: {broadcast_status['sent']}")
 
-
 # =====================================================================
 # ЭНДПОИНТЫ FASTAPI
 # =====================================================================
@@ -324,6 +516,18 @@ async def run_bg_broadcast(
 @app.get("/", response_class=HTMLResponse)
 async def index_page(request: Request):
     return templates.TemplateResponse(request=request, name="index.html", context={"message": None})
+
+@app.on_event("startup")
+async def start_watchdog():
+    # Запускаем сторожа вместе с сервером
+    asyncio.create_task(watchdog_task())
+
+@app.post("/api/heartbeat")
+async def receive_heartbeat():
+    """Эндпоинт, куда браузер отстукивает пульс"""
+    global last_heartbeat_time
+    last_heartbeat_time = time.time()
+    return {"status": "alive"}
 
 
 @app.post("/start-broadcast", response_class=HTMLResponse)
@@ -341,7 +545,8 @@ async def start_broadcast(
     excel_file: UploadFile = File(...),
     html_template: UploadFile = File(None),
     inline_image: UploadFile = File(None),
-    attachments: list[UploadFile] = File(None)
+    attachments: list[UploadFile] = File(None),
+    personal_docs: list[UploadFile] = File(None)
 ):
     if broadcast_status["is_running"]:
         return templates.TemplateResponse(
@@ -384,6 +589,13 @@ async def start_broadcast(
                     content = await attach.read()
                     attachments_data.append((content, attach.filename))
 
+        personal_files_map = {}
+        if personal_docs:
+            for pfile in personal_docs:
+                if pfile.filename:
+                    p_content = await pfile.read()
+                    personal_files_map[pfile.filename] = (p_content, pfile.filename)
+
         background_tasks.add_task(
             run_bg_broadcast,
             smtp_server=smtp_server.strip(),
@@ -397,8 +609,9 @@ async def start_broadcast(
             inline_img_bytes=inline_img_bytes,
             inline_img_name=inline_img_name,
             attachments_data=attachments_data,
+            personal_files_map=personal_files_map,
             delay_min=delay_min,
-            delay_max=delay_max
+            delay_max=delay_max,
         )
 
         status_msg = f"Рассылка успешно запущена для {len(recipients)} адресатов."

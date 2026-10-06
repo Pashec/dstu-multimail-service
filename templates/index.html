@@ -457,6 +457,14 @@
             <div class="hint">Можно выбрать несколько файлов сразу. Суммарно до 20 МБ.</div>
         </div>
 
+        <div class="form-group">
+            <label for="personal_docs">Персональные письма Word:</label>
+            <input type="file" id="personal_docs" name="personal_docs" accept=".docx,.doc,.pdf" multiple>
+            <div class="hint">
+                Выделите все файлы сразу (<b>Ctrl + A</b>). Название файла должно совпадать с ФИО или именем получателя из таблицы Excel (например: <code>Иванов Иван Иванович.docx</code>).
+            </div>
+        </div>
+
         <button type="submit" id="btnSubmit">Запустить рассылку</button>
     </form>
 
@@ -554,6 +562,19 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
+<script>
+    // Каждые 3 секунды сообщаем бэкенду, что вкладка открыта
+    setInterval(() => {
+        fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
+    }, 3000);
 
+    // Дополнительно: моментальный сигнал при закрытии/переходе
+    window.addEventListener('pagehide', () => {
+        // Если пользователь явно ушел со страницы
+        navigator.sendBeacon('/api/heartbeat');
+    });
+</script>
+</body>
+</html>
 </body>
 </html>
