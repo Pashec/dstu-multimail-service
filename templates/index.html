@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSTU Multi-mailer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root[data-theme="dark"] {
+            --bg: #040711;
+            --surface: rgba(10, 16, 30, 0.38);
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --surface-hover: rgba(255, 255, 255, 0.14);
+            --primary: #2563eb;
+            --primary-glow: rgba(37, 99, 235, 0.4);
+            --accent: #00d2ff;
+            --accent-glow: rgba(0, 210, 255, 0.35);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.35);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.35);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --input-bg: rgba(6, 11, 22, 0.45);
+            --terminal-bg: rgba(2, 5, 12, 0.65);
+            --modal-bg: rgba(8, 13, 26, 0.94);
+        }
+
+        :root[data-theme="light"] {
+            --bg: #f3f6fc;
+            --surface: rgba(255, 255, 255, 0.55);
+            --surface-border: rgba(0, 0, 0, 0.08);
+            --surface-hover: rgba(0, 0, 0, 0.15);
+            --primary: #2563eb;
+            --primary-glow: rgba(37, 99, 235, 0.25);
+            --accent: #0284c7;
+            --accent-glow: rgba(2, 132, 199, 0.25);
+            --danger: #dc2626;
+            --danger-glow: rgba(220, 38, 38, 0.25);
+            --success: #059669;
+            --success-glow: rgba(5, 150, 105, 0.25);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --input-bg: rgba(255, 255, 255, 0.7);
+            --terminal-bg: rgba(15, 23, 42, 0.92);
+            --modal-bg: rgba(255, 255, 255, 0.97);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+            user-select: none;
+            transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+        }
+
+        input, textarea, select {
+            user-select: text;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 24px 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1320px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Шапка */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--surface-border);
+            padding: 14px 26px;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .brand-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .clear-file-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 8px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            vertical-align: middle;
+        }
+        .clear-file-btn:hover {
+            background: #ef4444;
+            color: #ffffff;
+            transform: scale(1.1);
+        }
+
+        .logo-img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 12px var(--primary-glow));
+        }
+
+        .brand-title {
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-subtitle {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .clock-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(125, 125, 125, 0.08);
+            border: 1px solid var(--surface-border);
+            padding: 6px 14px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+            border-color: var(--accent-glow);
+        }
+
+        /* Ряд с быстрыми тегами */
+        .template-tags-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 4px;
+        }
+
+/* Кнопка-чип тега */
+.tag-pill {
+    background: rgba(0, 210, 255, 0.08);
+    border: 1px solid rgba(0, 210, 255, 0.22);
+    color: var(--accent);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.file-badge-container {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+    z-index: 20; /* Поверх невидимого input! */
+    position: relative;
+}
+
+.file-dropzone.has-file .file-badge-container {
+    display: inline-flex;
+}
+
+/* Сам бейдж с именем файла */
+.file-badge-pill {
+    background: rgba(14, 165, 233, 0.15);
+    border: 1px solid #0ea5e9;
+    color: #38bdf8;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Красная кнопка сброса (крестик) */
+.file-remove-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1;
+    transition: transform 0.15s ease, background 0.15s ease;
+    z-index: 30;
+}
+
+.file-remove-btn:hover {
+    background: #dc2626;
+    transform: scale(1.15);
+}
+
+.tag-pill:hover {
+    background: var(--accent);
+    color: #040711;
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.tag-pill:active {
+    transform: translateY(0);
+}
+
+        .header-btn {
+            background: rgba(125, 125, 125, 0.08);
+            border: 1px solid var(--surface-border);
+            color: var(--text-main);
+            height: 38px;
+            padding: 0 14px;
+            border-radius: 99px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .header-btn:hover {
+            background: rgba(125, 125, 125, 0.18);
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success);
+            padding: 7px 16px;
+            border-radius: 99px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        /* Сетка */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1.3fr 0.95fr;
+            gap: 22px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-layout { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--surface);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+            position: relative;
+        }
+
+        /* Ненавязчивая неоновая волна при отправке */
+        .card.broadcasting-active::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: var(--radius-lg);
+            padding: 1.5px;
+            background: linear-gradient(90deg, transparent, var(--accent), var(--primary), transparent);
+            background-size: 200% 100%;
+            animation: borderBeam 3s linear infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        @keyframes borderBeam {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .card-title {
+            font-size: 15.5px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--surface-border);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        label {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 13.5px;
+        }
+
+        /* Кастомно стилизованный селект */
+        .styled-select-wrap {
+            position: relative;
+            width: 100%;
+        }
+
+        select.styled-select {
+            width: 100%;
+            appearance: none;
+            -webkit-appearance: none;
+            background: var(--input-bg);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-md);
+            padding: 11px 36px 11px 14px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 13.5px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .styled-select-wrap::after {
+            content: '▾';
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+            font-size: 13px;
+        }
+
+        select.styled-select option {
+            background: #090e1a;
+            color: #fff;
+            padding: 8px;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 14px var(--accent-glow);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 105px;
+            line-height: 1.5;
+        }
+
+        /* Спойлер дополнительных настроек */
+        details.advanced-settings {
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-md);
+            background: rgba(125, 125, 125, 0.04);
+            overflow: hidden;
+        }
+
+        details.advanced-settings summary {
+            padding: 10px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        details.advanced-settings summary::-webkit-details-marker { display: none; }
+        details.advanced-settings summary::after { content: "▾"; font-size: 14px; }
+        details.advanced-settings[open] summary::after { transform: rotate(180deg); color: var(--accent); }
+
+        .advanced-body {
+            padding: 12px 14px;
+            border-top: 1px solid var(--surface-border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Дропзоны */
+        .file-dropzone {
+            position: relative;
+            border: 1.5px dashed var(--surface-border);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(125, 125, 125, 0.03);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .file-dropzone:hover {
+            border-color: var(--accent);
+            background: rgba(2, 132, 199, 0.05);
+        }
+
+        .file-dropzone.has-file {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.08);
+        }
+
+        .file-dropzone input[type="file"] {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .dropzone-label {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .dropzone-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .file-chosen-name {
+            font-size: 11.5px;
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+            display: none;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid var(--accent-glow);
+            margin-top: 4px;
+        }
+
+        /* Кнопки */
+        .btn-primary {
+            background: linear-gradient(135deg, #1d4ed8, #2563eb, #00d2ff);
+            background-size: 200% 200%;
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 13px 20px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 16px var(--primary-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary.is-running {
+            background: linear-gradient(90deg, #1d4ed8, #00d2ff, #1d4ed8);
+            background-size: 200% 100%;
+            animation: btnShimmer 2s infinite linear;
+        }
+
+        @keyframes btnShimmer {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+            border-radius: var(--radius-md);
+            padding: 11px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        /* Статистика */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: rgba(125, 125, 125, 0.05);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-title {
+            font-size: 11.5px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        /* Прогресс-бар */
+        .progress-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 9px;
+            background: rgba(125, 125, 125, 0.1);
+            border-radius: 99px;
+            overflow: hidden;
+            border: 1px solid var(--surface-border);
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #2563eb, #00d2ff);
+            border-radius: 99px;
+            transition: width 0.35s ease;
+        }
+
+        /* Терминал логов */
+        .terminal-box {
+            background: var(--terminal-bg);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+            height: 220px;
+            overflow-y: auto;
+            color: #7dd3fc;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .terminal-box::-webkit-scrollbar { width: 4px; }
+        .terminal-box::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        .terminal-line { word-break: break-all; opacity: 0.9; }
+        .terminal-line.error { color: #f87171; font-weight: 600; }
+
+        /* Футер */
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--surface-border);
+            margin-top: 4px;
+        }
+
+        .footer-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Модальное окно */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .modal-card {
+            background: var(--modal-bg);
+            border: 1px solid var(--surface-border);
+            width: 90%;
+            max-width: 780px;
+            max-height: 85vh;
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--surface-border);
+            padding-bottom: 12px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .modal-close-btn:hover {
+            color: var(--text-main);
+            background: rgba(125, 125, 125, 0.1);
+        }
+
+        .guide-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .guide-subtitle {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .guide-text {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .code-pill {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(125, 125, 125, 0.12);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--text-main);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="particles-canvas"></canvas>
+
+<div class="container">
+    <!-- Шапка -->
+    <header class="header">
+        <div class="brand-info">
+            <img src="/static/DSTU-logo.png" alt="ДГТУ" class="logo-img">
+            <div>
+                <h1 class="brand-title">DSTU Multi-mailer</h1>
+                <p class="brand-subtitle">Система персонализированных рассылок и документов</p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <!-- Часы с единственным эмодзи времени -->
+            <div class="clock-chip">
+                <span>🕒</span>
+                <span id="liveClock">00:00:00</span>
+            </div>
+
+            <button class="header-btn" onclick="openGuideModal()">
+                <span>Руководство пользователя</span>
+            </button>
+
+            <button class="header-btn" onclick="toggleTheme()" id="themeBtn" title="Сменить тему">
+                <span id="themeBtnText">Тема</span>
+            </button>
+
+            <div class="status-badge" id="system-status">
+                <div class="pulse-dot" id="system-dot"></div>
+                <span id="system-status-text">Готов к работе</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Сетка -->
+    <div class="grid-layout">
+        <!-- Форма -->
+        <form action="/start-broadcast" method="post" enctype="multipart/form-data" class="card" id="broadcastForm">
+            <!-- Эмодзи оставлен по правилу -->
+            <h2 class="card-title">⚙️ Настройки и Текст</h2>
+
+            <!-- Стилизованное меню пресетов -->
+            <div class="form-group">
+                <label>Почтовый сервис</label>
+                <div class="styled-select-wrap">
+                    <select id="presetSelect" class="styled-select" onchange="applyProviderPreset(this.value)">
+                        <option value="dstu" selected>Почта ДГТУ (mail.donstu.ru : 25)</option>
+                        <option value="yandex">Яндекс 360 / Mail (smtp.yandex.ru : 465)</option>
+                        <option value="mailru">Mail.ru (smtp.mail.ru : 465)</option>
+                        <option value="gmail">Google Gmail (smtp.gmail.com : 587)</option>
+                        <option value="custom">Пользовательский сервер (задать вручную)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Дополнительные параметры: теперь сразу под пресетами -->
+            <details class="advanced-settings" id="advancedDetails">
+                <summary>Дополнительные параметры (Сервер, Порт, Интервалы)</summary>
+                <div class="advanced-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>SMTP Сервер</label>
+                            <input type="text" id="smtp_server" name="smtp_server" value="mail.donstu.ru" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Порт</label>
+                            <input type="number" id="smtp_port" name="smtp_port" value="25" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Мин. задержка (сек)</label>
+                            <input type="number" step="0.5" name="delay_min" value="1.0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Макс. задержка (сек)</label>
+                            <input type="number" step="0.5" name="delay_max" value="2.5" required>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <!-- Поля авторизации -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email отправителя</label>
+                    <input type="text" id="email_input" name="email_address" placeholder="user@donstu.ru" required>
+                </div>
+                <div class="form-group">
+                    <label>Пароль / Пароль приложения</label>
+                    <input type="password" id="password_input" name="email_password" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Тема письма</label>
+                <input type="text" name="subject" placeholder="Уведомление / Официальное письмо" required>
+            </div>
+
+            <div class="form-group">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+        <label style="margin: 0;">Текст сообщения</label>
+        <span style="font-size: 11px; color: var(--text-muted);">Нажмите, чтобы вставить в текст:</span>
+    </div>
+
+    <!-- Интерактивные чипы быстрых вставок -->
+    <div class="template-tags-row">
+        <button type="button" class="tag-pill" onclick="insertTag('{обращение}')" title="Вставит: Уважаемый / Уважаемая">{обращение}</button>
+        <button type="button" class="tag-pill" onclick="insertTag('{имя}')" title="Вставит имя из таблицы">{имя}</button>
+        <button type="button" class="tag-pill" onclick="insertTag('{отчество}')" title="Вставит отчество">{отчество}</button>
+        <button type="button" class="tag-pill" onclick="insertTag('{фамилия}')" title="Вставит фамилию">{фамилия}</button>
+    </div>
+
+    <!-- Само поле с живым примером в placeholder -->
+    <textarea 
+        id="letter_text_area" 
+        name="letter_text" 
+        placeholder="Пример:&#10;{обращение} {имя} {отчество}, направляем вам документы для ознакомления."></textarea>
+</div>
+
+            <!-- Эмодзи оставлен по правилу -->
+            <h2 class="card-title" style="margin-top: 4px;">📎 Прикрепляемые файлы</h2>
+
+            <!-- 1. Таблица адресатов -->
+<div class="file-dropzone" id="zone-excel">
+    <input type="file" id="excel_input" name="excel_file" accept=".xlsx" required onchange="updateDropzone(this, 'excel')">
+    <span class="dropzone-label">Таблица адресатов (Excel .xlsx)</span>
+    <span class="dropzone-desc">Обязательно: email, фамилия, имя, отчество</span>
+    <div class="file-badge-container" id="container-excel">
+        <span class="file-badge-pill" id="badge-excel"></span>
+        <button type="button" class="file-remove-btn" onclick="clearZone(event, 'excel')" title="Открепить">✕</button>
+    </div>
+</div>
+
+<!-- 2. Персональные файлы -->
+<div class="file-dropzone" id="zone-personal">
+    <input type="file" id="personal_docs_input" name="personal_docs" accept=".docx,.doc,.pdf" multiple onchange="updateDropzone(this, 'personal')">
+    <span class="dropzone-label">Персональные Word/PDF файлы</span>
+    <span class="dropzone-desc">Авто-поиск: «Путину В.В.docx» ↔ «Путин Владимир»</span>
+    <div class="file-badge-container" id="container-personal">
+        <span class="file-badge-pill" id="badge-personal"></span>
+        <button type="button" class="file-remove-btn" onclick="clearZone(event, 'personal')" title="Открепить">✕</button>
+    </div>
+</div>
+
+<div class="form-row">
+    <!-- 3. Общие файлы -->
+    <div class="file-dropzone" id="zone-common">
+        <input type="file" id="attachments_input" name="attachments" multiple onchange="updateDropzone(this, 'common')">
+        <span class="dropzone-label">Общие файлы</span>
+        <span class="dropzone-desc">Для всех адресатов</span>
+        <div class="file-badge-container" id="container-common">
+            <span class="file-badge-pill" id="badge-common"></span>
+            <button type="button" class="file-remove-btn" onclick="clearZone(event, 'common')" title="Открепить">✕</button>
+        </div>
+    </div>
+
+    <!-- 4. Баннер -->
+    <div class="file-dropzone" id="zone-img">
+        <input type="file" id="banner_input" name="inline_image" accept="image/*" onchange="updateDropzone(this, 'img')">
+        <span class="dropzone-label">Баннер</span>
+        <span class="dropzone-desc">В тело письма</span>
+        <div class="file-badge-container" id="container-img">
+            <span class="file-badge-pill" id="badge-img"></span>
+            <button type="button" class="file-remove-btn" onclick="clearZone(event, 'img')" title="Открепить">✕</button>
+        </div>
+    </div>
+</div>
+
+            <button type="submit" class="btn-primary" id="startBtn">
+                <span id="startBtnText">Запустить процесс рассылки</span>
+            </button>
+        </form>
+
+        <!-- Мониторинг -->
+        <div class="card" id="monitorCard" style="justify-content: flex-start;">
+            <h2 class="card-title">Мониторинг в реальном времени</h2>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span class="stat-title">Всего адресатов</span>
+                    <span class="stat-value" id="stat-total">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-title">Отправлено писем</span>
+                    <span class="stat-value" style="color: var(--success);" id="stat-sent">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-title">Пропущено строк</span>
+                    <span class="stat-value" style="color: #fbbf24;" id="stat-skipped">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-title">Ошибок</span>
+                    <span class="stat-value" style="color: var(--danger);" id="stat-errors">0</span>
+                </div>
+            </div>
+
+            <div class="progress-wrapper">
+                <div style="display: flex; justify-content: space-between; font-size: 12.5px;">
+                    <span style="color: var(--text-muted);">Прогресс</span>
+                    <span id="progress-percent" style="font-weight: 700;">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 6px;">
+                <label>Терминал выполнения & Логи</label>
+                <div class="terminal-box" id="terminalLog">
+                    <div class="terminal-line">[СИСТЕМА] Приложение готово к работе.</div>
+                </div>
+            </div>
+
+            <button type="button" class="btn-danger" id="stopBtn" onclick="stopBroadcast()" style="margin-top: auto;">
+                <span>Остановить рассылку</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div>
+            <span>Личный некоммерческий проект для ДГТУ • Создано для автоматизации рабочих задач</span>
+        </div>
+        <div style="display: flex; gap: 16px; align-items: center;">
+            <a href="https://github.com/Pashec/dstu-multimail-service" target="_blank" class="footer-link">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+                <span>GitHub Репозиторий</span>
+            </a>
+            <span>v2.4.1</span>
+        </div>
+    </footer>
+</div>
+
+<!-- Модальное окно руководства -->
+<div class="modal-overlay" id="guideModal" onclick="closeModalOnBackdrop(event)">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 class="modal-title">Руководство пользователя</h3>
+            <button class="modal-close-btn" onclick="closeGuideModal()">✕</button>
+        </div>
+
+        <div class="guide-section">
+            <h4 class="guide-subtitle">1. Требования к Excel-таблице</h4>
+            <p class="guide-text">
+                Файл должен быть формата <span class="code-pill">.xlsx</span>. Первая строка таблицы обязательно содержит наименования колонок:
+                <br>• <span class="code-pill">email</span> — электронный адрес получателя.
+                <br>• <span class="code-pill">фамилия</span>, <span class="code-pill">имя</span>, <span class="code-pill">отчество</span> (регистр букв значения не имеет).
+            </p>
+        </div>
+
+        <div class="guide-section">
+            <h4 class="guide-subtitle">2. Определение пола и правила склонений</h4>
+            <p class="guide-text">
+                Программа анализирует ФИО через библиотеку pymorphy3:
+                <br>• По отчеству (<span class="code-pill">...вич</span> / <span class="code-pill">...вна</span>) автоматически определяется род и формируется корректное обращение: <b>Уважаемый</b> или <b>Уважаемая</b>.
+                <br>• Если отчество отсутствует, род определяется по имени с помощью грамматических правил.
+            </p>
+        </div>
+
+        <div class="guide-section">
+            <h4 class="guide-subtitle">3. Автоприкрепление персональных документов</h4>
+            <p class="guide-text">
+                Файлы сопоставляются с адресатами автоматически:
+                <br>• Название документа в косвенном падеже (например, <span class="code-pill">Путину В.В.docx</span>) приводится к начальной форме фамилии (<span class="code-pill">путин</span>) и сопоставляется с первой буквой инициала имени (<span class="code-pill">в</span>).
+                <br>• Получатель из Excel-таблицы (<span class="code-pill">Путин Владимир</span>) получает точно такой же ключ, благодаря чему файл гарантированно прикрепляется строго к его письму.
+            </p>
+        </div>
+
+        <div class="guide-section">
+            <h4 class="guide-subtitle">4. Использование шаблонов Jinja2</h4>
+            <p class="guide-text">
+                В тексте письма можно указывать динамические переменные:
+                {% raw %}
+                <br>• <span class="code-pill">{{ first_name }}</span> — имя адресата.
+                <br>• <span class="code-pill">{{ patronymic }}</span> — отчество.
+                <br>• <span class="code-pill">{{ salutation }}</span> — форма обращения («Уважаемый» / «Уважаемая»).
+                <br>• Любые другие заголовки колонок таблицы, например <span class="code-pill">{{ Должность }}</span>.
+                {% endraw %}
+            </p>
+        </div>
+
+        <button class="btn-primary" onclick="closeGuideModal()" style="margin-top: 8px;">
+            <span>Закрыть руководство</span>
+        </button>
+    </div>
+</div>
+
+<script>
+    /* =========================================================
+       МОДАЛЬНОЕ ОКНО
+       ========================================================= */
+    function insertTag(tag) {
+    const textarea = document.getElementById('letter_text_area');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+
+    // Вставляем тег ровно в место курсора
+    textarea.value = text.substring(0, start) + tag + text.substring(end);
+
+    // Возвращаем фокус и сдвигаем курсор за вставленный тег
+    textarea.focus();
+    textarea.selectionStart = textarea.selectionEnd = start + tag.length;
+}
+
+    function openGuideModal() {
+        document.getElementById('guideModal').style.display = 'flex';
+    }
+    function closeGuideModal() {
+        document.getElementById('guideModal').style.display = 'none';
+    }
+    function closeModalOnBackdrop(e) {
+        if (e.target.id === 'guideModal') closeGuideModal();
+    }
+
+    /* =========================================================
+       СВЕТЛАЯ / ТЕМНАЯ ТЕМА
+       ========================================================= */
+    function toggleTheme() {
+        const root = document.documentElement;
+        const currentTheme = root.getAttribute('data-theme') || 'dark';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        document.getElementById('themeBtnText').innerText = newTheme === 'dark' ? 'Светлая тема' : 'Тёмная тема';
+    }
+
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('themeBtnText').innerText = savedTheme === 'dark' ? 'Светлая тема' : 'Тёмная тема';
+
+    /* =========================================================
+       ПРЕСЕТЫ ПОЧТОВЫХ СЕРВИСОВ
+       ========================================================= */
+    const PRESETS = {
+        dstu: { 
+            server: 'mail.donstu.ru', 
+            port: 25, 
+            emailPlaceholder: 'user@donstu.ru', 
+            passPlaceholder: '••••••••'
+        },
+        yandex: { 
+            server: 'smtp.yandex.ru', 
+            port: 465, 
+            emailPlaceholder: 'username@yandex.ru', 
+            passPlaceholder: 'Пароль приложения Яндекса'
+        },
+        mailru: { 
+            server: 'smtp.mail.ru', 
+            port: 465, 
+            emailPlaceholder: 'username@mail.ru', 
+            passPlaceholder: 'Пароль для внешних приложений'
+        },
+        gmail: { 
+            server: 'smtp.gmail.com', 
+            port: 587, 
+            emailPlaceholder: 'username@gmail.com', 
+            passPlaceholder: 'Пароль приложения Google (16 знаков)'
+        },
+        custom: null
+    };
+
+    function applyProviderPreset(presetKey) {
+        const details = document.getElementById('advancedDetails');
+        const emailInput = document.getElementById('email_input');
+        const passwordInput = document.getElementById('password_input');
+
+        if (presetKey === 'custom') {
+            details.open = true;
+            emailInput.placeholder = 'your-mail@domain.com';
+            passwordInput.placeholder = '••••••••';
+            return;
+        }
+
+        const config = PRESETS[presetKey];
+        if (config) {
+            document.getElementById('smtp_server').value = config.server;
+            document.getElementById('smtp_port').value = config.port;
+            emailInput.placeholder = config.emailPlaceholder;
+            passwordInput.placeholder = config.passPlaceholder;
+        }
+    }
+
+    /* =========================================================
+       ЧАСЫ
+       ========================================================= */
+    function updateClock() {
+        const now = new Date();
+        const clockEl = document.getElementById('liveClock');
+        if (clockEl) clockEl.innerText = now.toLocaleTimeString('ru-RU', { hour12: false });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    /* =========================================================
+       ЧАСТИЦЫ
+       ========================================================= */
+    const canvas = document.getElementById('particles-canvas');
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    });
+
+    const mouse = { x: null, y: null, radius: 160 };
+    window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    window.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.vx = (Math.random() - 0.5) * 0.8;
+            this.vy = (Math.random() - 0.5) * 0.8;
+            this.radius = Math.random() * 2 + 1.2;
+        }
+        draw() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = isDark ? 'rgba(0, 210, 255, 0.85)' : 'rgba(37, 99, 235, 0.7)';
+            ctx.shadowBlur = isDark ? 10 : 0;
+            ctx.shadowColor = 'rgba(0, 210, 255, 0.6)';
+            ctx.fill();
+        }
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x < 0 || this.x > width) this.vx = -this.vx;
+            if (this.y < 0 || this.y > height) this.vy = -this.vy;
+
+            if (mouse.x !== null && mouse.y !== null) {
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < mouse.radius) {
+                    const force = (mouse.radius - distance) / mouse.radius;
+                    this.x += (dx / distance) * force * 3.8;
+                    this.y += (dy / distance) * force * 3.8;
+                }
+            }
+        }
+    }
+
+    const particlesArray = [];
+    const count = Math.floor((width * height) / 10500);
+    for (let i = 0; i < count; i++) particlesArray.push(new Particle());
+
+    function animateParticles() {
+        ctx.clearRect(0, 0, width, height);
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+        for (let i = 0; i < particlesArray.length; i++) {
+            particlesArray[i].update();
+            particlesArray[i].draw();
+
+            for (let j = i + 1; j < particlesArray.length; j++) {
+                const dx = particlesArray[i].x - particlesArray[j].x;
+                const dy = particlesArray[i].y - particlesArray[j].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 135) {
+                    const alpha = (1 - dist / 135) * (isDark ? 0.38 : 0.18);
+                    ctx.beginPath();
+                    ctx.strokeStyle = isDark ? `rgba(0, 210, 255, ${alpha})` : `rgba(37, 99, 235, ${alpha})`;
+                    ctx.lineWidth = 1;
+                    ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
+                    ctx.lineTo(particlesArray[j].x, particlesArray[j].y);
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    /* =========================================================
+       ОБРАБОТКА ВЫБОРА ФАЙЛОВ
+       ========================================================= */
+    // Функция сброса файла
+const inputIdMap = {
+    excel: 'excel_input',
+    personal: 'personal_docs_input',
+    common: 'attachments_input',
+    img: 'banner_input'
+};
+
+// Функция обновления при выборе файла
+function updateDropzone(input, type) {
+    const zone = document.getElementById(`zone-${type}`);
+    const badge = document.getElementById(`badge-${type}`);
+
+    if (input.files && input.files.length > 0) {
+        if (input.files.length === 1) {
+            badge.innerText = input.files[0].name;
+        } else {
+            badge.innerText = `Выбрано файлов: ${input.files.length}`;
+        }
+        zone.classList.add('has-file');
+    } else {
+        zone.classList.remove('has-file');
+    }
+}
+
+// Функция мгновенного сброса (при клике на крестик)
+function clearZone(event, type) {
+    event.stopPropagation(); // Блокируем всплытие, чтобы не открывался проводник
+    event.preventDefault();
+
+    const inputId = inputIdMap[type];
+    const input = document.getElementById(inputId);
+    const zone = document.getElementById(`zone-${type}`);
+    const badge = document.getElementById(`badge-${type}`);
+
+    if (input) input.value = ''; // Полностью очищаем файлы из инпута
+    if (badge) badge.innerText = '';
+    if (zone) zone.classList.remove('has-file');
+}
+
+    /* =========================================================
+       МОНИТОРИНГ И ДИНАМИЧЕСКИЙ ОПРОС
+       ========================================================= */
+    let lastLogCount = 0;
+    let statusInterval = null;
+
+    async function checkStatus() {
+        try {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+
+            document.getElementById('stat-total').innerText = data.total;
+            document.getElementById('stat-sent').innerText = data.sent;
+            document.getElementById('stat-skipped').innerText = data.skipped;
+            document.getElementById('stat-errors').innerText = data.errors ? data.errors.length : 0;
+
+            let percent = 0;
+            if (data.total > 0) {
+                percent = Math.round(((data.sent + data.skipped) / data.total) * 100);
+            }
+            document.getElementById('progress-percent').innerText = `${percent}%`;
+            document.getElementById('progress-fill').style.width = `${percent}%`;
+
+            const statusDot = document.getElementById('system-dot');
+            const statusText = document.getElementById('system-status-text');
+            const startBtn = document.getElementById('startBtn');
+            const startBtnText = document.getElementById('startBtnText');
+            const monitorCard = document.getElementById('monitorCard');
+
+            if (data.is_running) {
+                statusDot.style.background = 'var(--primary)';
+                statusText.innerText = 'Отправка писем...';
+                startBtn.disabled = true;
+                startBtn.classList.add('is-running');
+                startBtnText.innerText = 'Идет отправка...';
+                monitorCard.classList.add('broadcasting-active');
+            } else {
+                if (statusInterval) {
+                    clearInterval(statusInterval);
+                    statusInterval = null;
+                }
+                statusDot.style.background = 'var(--success)';
+                statusText.innerText = data.total > 0 ? 'Рассылка завершена' : 'Готов к работе';
+                startBtn.disabled = false;
+                startBtn.classList.remove('is-running');
+                startBtnText.innerText = 'Запустить процесс рассылки';
+                monitorCard.classList.remove('broadcasting-active');
+            }
+
+            if (data.logs && data.logs.length > lastLogCount) {
+                const terminal = document.getElementById('terminalLog');
+                for (let i = lastLogCount; i < data.logs.length; i++) {
+                    const line = document.createElement('div');
+                    line.className = 'terminal-line';
+                    if (data.logs[i].includes('Ошибка') || data.logs[i].includes('НЕ найден')) {
+                        line.classList.add('error');
+                    }
+                    line.innerText = data.logs[i];
+                    terminal.appendChild(line);
+                }
+                terminal.scrollTop = terminal.scrollHeight;
+                lastLogCount = data.logs.length;
+            }
+        } catch (e) {}
+    }
+
+document.getElementById('broadcastForm').addEventListener('submit', async function(e) {
+    e.preventDefault(); // Запрещаем перезагрузку страницы!
+
+    const form = e.target;
+    const formData = new FormData(form);
+
+    // 1. Принудительно очищаем и поштучно упаковываем персональные файлы
+    formData.delete('personal_docs');
+    const pInput = document.getElementById('personal_docs_input');
+    if (pInput && pInput.files.length > 0) {
+        for (let i = 0; i < pInput.files.length; i++) {
+            formData.append('personal_docs', pInput.files[i]);
+        }
+    }
+
+    // 2. То же самое для общих файлов
+    formData.delete('attachments');
+    const commonInput = form.querySelector('input[name="attachments"]');
+    if (commonInput && commonInput.files.length > 0) {
+        for (let i = 0; i < commonInput.files.length; i++) {
+            formData.append('attachments', commonInput.files[i]);
+        }
+    }
+
+    const startBtn = document.getElementById('startBtn');
+    const startBtnText = document.getElementById('startBtnText');
+    const monitorCard = document.getElementById('monitorCard');
+    const statusDot = document.getElementById('system-dot');
+    const statusText = document.getElementById('system-status-text');
+
+    startBtn.disabled = true;
+    startBtn.classList.add('is-running');
+    if (startBtnText) startBtnText.innerText = 'Идет отправка...';
+    if (monitorCard) monitorCard.classList.add('broadcasting-active');
+    statusDot.style.background = 'var(--primary)';
+    statusText.innerText = 'Отправка писем...';
+
+    try {
+        await fetch('/start-broadcast', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!statusInterval) {
+            statusInterval = setInterval(checkStatus, 1200);
+        }
+    } catch (err) {
+        alert('Ошибка при отправке запроса: ' + err);
+        startBtn.disabled = false;
+        startBtn.classList.remove('is-running');
+        if (startBtnText) startBtnText.innerText = 'Запустить процесс рассылки';
+        if (monitorCard) monitorCard.classList.remove('broadcasting-active');
+    }
+});
+
+    async function stopBroadcast() {
+        if (!confirm('Прервать текущую рассылку?')) return;
+        const res = await fetch('/api/stop', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message);
+    }
+</script>
+
+</body>
+</html>

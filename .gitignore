@@ -1,0 +1,36 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller / Build artifacts
+build/
+dist/
+*.manifest
+*.spec.bak
+
+# Virtual Environments
+venv/
+env/
+.env
+.venv/
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Тестовые данные и логи рассылки
+db.xlsx
+*.docx
+*.pdf
+!templates/
+!static/
+!app_icon.ico
+!dstu-logo.png
