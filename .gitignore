@@ -1,26 +1,44 @@
-# Сборка PyInstaller и артефакты
-dist/
-build/
-*.spec
-
-# Виртуальное окружение
+# Виртуальное окружение Python
 venv/
-.venv/
 env/
+.env
+.venv/
 
-# Кэш Python
+# Байт-код и кэш Python
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Логи и временные файлы
-*.log
-.DS_Store
-*.tmp
-*.bak
+# Артефакты сборки PyInstaller
+build/
+dist/
+*.manifest
+*.spec.bak
+DGTU_Rassylka.spec
 
-# Тестовые данные и картинки
-*.xlsx
-*.xls
-image.png
-image-1.png
+# Локальные данные приложения, кэш интерфейса и отчеты
+credentials.json
+window_state.json
+templates_storage.json
+webview_storage/
+reports/
+
+# Конфигурации редакторов и среды разработки
+.vscode/
+.idea/
+*.swp
+
+# Служебные файлы операционной системы
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Тестовые документы и персональные файлы рассылки
+db.xlsx
+*.docx
+*.pdf
+!templates/
+!static/
+!app_icon.ico
+!dstu-logo.png
