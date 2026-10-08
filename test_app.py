@@ -61,7 +61,7 @@ def test_excel_parsing():
     ws.append(["Email", "Фамилия", "Имя", "Отчество", "Группа", "Кабинет"])
     ws.append(["ivanov@donstu.ru", "Иванов", "Иван", "Иванович", "ИС-41", "305"])
     ws.append(["smirnova@donstu.ru", "Смирнова", "Анна", "Петровна", "ИС-42", "306"])
-    ws.append(["kupchuk@donstu.ru", "Купчук", "Павел", "Владимирович", "ИС-43", "307"])
+    ws.append(["putin@donstu.ru", "Путин", "Павел", "Владимирович", "ИС-43", "307"])
 
     stream = io.BytesIO()
     wb.save(stream)
@@ -91,18 +91,18 @@ def test_salutation():
 def test_multi_personal_matching():
     print("[ТЕСТ 3] Проверка одновременного сопоставления Word и PDF для одного адресата...", end=" ")
     files_map = {
-        "Купчуку П.В.pdf": (b"pdf_content_kupchuk", "Купчуку П.В.pdf"),
-        "Купчуку П.В.docx": (b"docx_content_kupchuk", "Купчуку П.В.docx"),
+        "Путину П.В.pdf": (b"pdf_content_putin", "Путину В.В.pdf"),
+        "Путину П.В.docx": (b"docx_content_putin", "Путину П.В.docx"),
         "Иванову И.И.docx": (b"docx_content_ivanov", "Иванову И.И.docx"),
         "Смирнова Анна Петровна.pdf": (b"pdf_content_smirnova", "Смирнова Анна Петровна.pdf"),
     }
 
-    person_kupchuk = {"фамилия": "Купчук", "имя": "Павел", "отчество": "Владимирович"}
-    matched_kupchuk = find_all_personal_docs(person_kupchuk, files_map)
-    assert len(matched_kupchuk) == 2, f"Для Купчука должно найтись 2 файла (Word и PDF), найдено {len(matched_kupchuk)}"
-    names = [doc[1] for doc in matched_kupchuk]
-    assert "Купчуку П.В.pdf" in names
-    assert "Купчуку П.В.docx" in names
+    person_putin = {"фамилия": "Путин", "имя": "Павел", "отчество": "Владимирович"}
+    matched_putin = find_all_personal_docs(person_putin, files_map)
+    assert len(matched_putin) == 2, f"Для Путина должно найтись 2 файла (Word и PDF), найдено {len(matched_putin)}"
+    names = [doc[1] for doc in matched_putin]
+    assert "Путину П.В.pdf" in names
+    assert "Путину П.В.docx" in names
 
     person_ivanov = {"фамилия": "Иванов", "имя": "Иван", "отчество": "Иванович"}
     matched_iv = find_all_personal_docs(person_ivanov, files_map)
@@ -133,7 +133,7 @@ def test_seamless_template_rendering():
     data = {
         "first_name": "Павел",
         "patronymic": "Владимирович",
-        "last_name": "Купчук",
+        "last_name": "Путин",
         "salutation": "Уважаемый",
         "содержимое_pdf": '<div style="margin: 15px 0 20px 0;"><img src="cid:doc_page_1" alt="Документ"></div>'
     }
@@ -288,20 +288,20 @@ def test_excel_report_generation():
 def test_email_payload_builder():
     print("[ТЕСТ 10] Проверка сборки полезной нагрузки письма (MIME & Preview)...", end=" ")
     person = {
-        "email": "kupchuk@donstu.ru",
-        "фамилия": "Купчук",
+        "email": "putin@donstu.ru",
+        "фамилия": "Путин",
         "имя": "Павел",
         "отчество": "Владимирович"
     }
     files_map = {
-        "Купчуку П.В.pdf": (FALLBACK_MINIMAL_PDF, "Купчуку П.В.pdf"),
-        "Купчуку П.В.docx": (b"fake_docx_content", "Купчуку П.В.docx")
+        "Путину П.В.pdf": (FALLBACK_MINIMAL_PDF, "Путину П.В.pdf"),
+        "Путину П.В.docx": (b"fake_docx_content", "Путину П.В.docx")
     }
     attachments_data = [(b"common_instruction", "Инструкция_ДГТУ.pdf")]
 
     payload = build_email_payload(
         email_address="sender@donstu.ru",
-        email_to="kupchuk@donstu.ru",
+        email_to="putin@donstu.ru",
         subject="Уведомление ДГТУ",
         letter_text="{обращение} {имя} {отчество}!\n\nОзнакомьтесь с приложенными документами.\n\n{содержимое_pdf}",
         is_pure_html=False,
@@ -314,14 +314,14 @@ def test_email_payload_builder():
         also_attach_pdf=True
     )
 
-    assert payload["fio"] == "Купчук Павел Владимирович"
+    assert payload["fio"] == "Путин Павел Владимирович"
     assert payload["salutation"] == "Уважаемый"
     assert "Уважаемый Павел Владимирович!" in payload["html_body"]
     assert "Инструкция_ДГТУ.pdf" in payload["attached_filenames"]
-    assert "Купчуку П.В.docx" in payload["attached_filenames"]
-    assert "Купчуку П.В.pdf" in payload["attached_filenames"]
+    assert "Путину П.В.docx" in payload["attached_filenames"]
+    assert "Путину П.В.pdf" in payload["attached_filenames"]
     assert payload["msg_root"]["Subject"] == "Уведомление ДГТУ"
-    assert payload["msg_root"]["To"] == "kupchuk@donstu.ru"
+    assert payload["msg_root"]["To"] == "putin@donstu.ru"
     print("УСПЕХ!")
 
 
